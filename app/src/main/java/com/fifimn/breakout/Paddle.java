@@ -79,4 +79,6 @@ public class Paddle {
         rect.right = x + length;
     }
 
+
+
 }

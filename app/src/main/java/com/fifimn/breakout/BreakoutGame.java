@@ -1,6 +1,7 @@
 package com.fifimn.breakout;
 
 import android.app.Activity;
+import android.content.Intent;
 import android.content.res.AssetFileDescriptor;
 import android.content.res.AssetManager;
 import android.graphics.Point;
@@ -19,15 +20,54 @@ import android.view.Display;
 import android.view.MotionEvent;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
+import android.view.View;
+import android.view.Window;
+import android.widget.Button;
+import android.widget.FrameLayout;
+import android.widget.LinearLayout;
+import android.widget.RelativeLayout;
+
+import com.google.android.gms.ads.AdListener;
+import com.google.android.gms.ads.AdRequest;
+import com.google.android.gms.ads.AdSize;
+import com.google.android.gms.ads.AdView;
+import com.google.android.gms.ads.InterstitialAd;
+import com.google.android.gms.ads.MobileAds;
 
 import java.io.IOException;
 
-public class BreakoutGame extends Activity {
+public class BreakoutGame extends Activity implements View.OnClickListener{
 
     // gameView will be the view of the game
     // It will also hold the logic of the game
     // and respond to screen touches as well
     BreakoutView breakoutView;
+
+    InterstitialAd mInterstitialAd;
+    boolean GAME_OVER = false;
+
+    AdsCallback mCallback;
+
+    public void showInterAds() {
+        Log.d("MainActivity", "showInterstitial");
+
+        if (mInterstitialAd.isLoaded()) {
+            mInterstitialAd.show();
+        } else {
+            finish();
+        }
+    }
+    @Override
+    public void onBackPressed() {
+        super.onBackPressed();
+        showInterAds();
+    }
+
+    public void onClick(View v) {
+        Intent intent = new Intent(this, BreakoutGame.class);
+        startActivity(intent);
+    }
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -36,6 +76,62 @@ public class BreakoutGame extends Activity {
         // Initialize gameView and set it as the view
         breakoutView = new BreakoutView(this);
         setContentView(breakoutView);
+
+        // Sample AdMob app ID: ca-app-pub-3940256099942544~3347511713
+        MobileAds.initialize(this, "ca-app-pub-3940256099942544~3347511713");
+
+        requestWindowFeature(Window.FEATURE_NO_TITLE);
+
+        FrameLayout game = new FrameLayout(this);
+        LinearLayout gameWidgets = new LinearLayout(this);
+
+        Button endGameButton = new Button(this);
+
+        endGameButton.setWidth(300);
+        endGameButton.setText("Start Game");
+
+        //Banner
+        AdView adView = new AdView(this);
+        adView.setAdSize(AdSize.BANNER);
+        adView.setAdUnitId("ca-app-pub-3940256099942544/6300978111");
+
+        //Interstitial
+        mInterstitialAd = new InterstitialAd(this);
+        mInterstitialAd.setAdUnitId("ca-app-pub-3940256099942544/1033173712");
+        mInterstitialAd.loadAd(new AdRequest.Builder().build());
+        mInterstitialAd.setAdListener(new AdListener() {
+
+            @Override
+            public void onAdClosed() {
+                super.onAdClosed();
+                Log.d("MainActivity", "onAdClosed");
+                finish();
+
+            }
+        });
+
+
+        RelativeLayout relativeLayout = new RelativeLayout(this);
+
+        RelativeLayout.LayoutParams adViewParams = new RelativeLayout.LayoutParams(
+                AdView.LayoutParams.WRAP_CONTENT,
+                AdView.LayoutParams.WRAP_CONTENT);
+        // align bottom
+        adViewParams.addRule(RelativeLayout.ALIGN_PARENT_TOP);
+        // align center
+        adViewParams.addRule(RelativeLayout.CENTER_IN_PARENT, RelativeLayout.TRUE);
+
+        relativeLayout.addView(adView, adViewParams);
+
+
+        AdRequest adRequest = new AdRequest.Builder().build();
+        adView.loadAd(adRequest);
+
+        game.addView(breakoutView);
+        game.addView(relativeLayout);
+
+        setContentView(game);
+        endGameButton.setOnClickListener(this);
 
     }
 
