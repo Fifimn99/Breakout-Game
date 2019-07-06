@@ -36,7 +36,7 @@ import com.google.android.gms.ads.MobileAds;
 
 import java.io.IOException;
 
-public class BreakoutGame extends Activity implements View.OnClickListener{
+public class BreakoutGame extends Activity implements View.OnClickListener {
 
     // gameView will be the view of the game
     // It will also hold the logic of the game
@@ -48,6 +48,13 @@ public class BreakoutGame extends Activity implements View.OnClickListener{
 
     AdsCallback mCallback;
 
+    private GoogleSignInClient googleSignInClient;
+
+    private SignInButton signInButton;
+    private Button signOutButton;
+
+    private static final int RC_SIGN_IN = 9001;
+
     public void showInterAds() {
         Log.d("MainActivity", "showInterstitial");
 
@@ -57,6 +64,7 @@ public class BreakoutGame extends Activity implements View.OnClickListener{
             finish();
         }
     }
+
     @Override
     public void onBackPressed() {
         super.onBackPressed();
@@ -68,14 +76,12 @@ public class BreakoutGame extends Activity implements View.OnClickListener{
         startActivity(intent);
     }
 
-
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-
         // Initialize gameView and set it as the view
         breakoutView = new BreakoutView(this);
-        setContentView(breakoutView);
+
 
         // Sample AdMob app ID: ca-app-pub-3940256099942544~3347511713
         MobileAds.initialize(this, "ca-app-pub-3940256099942544~3347511713");
@@ -100,16 +106,14 @@ public class BreakoutGame extends Activity implements View.OnClickListener{
         mInterstitialAd.setAdUnitId("ca-app-pub-3940256099942544/1033173712");
         mInterstitialAd.loadAd(new AdRequest.Builder().build());
         mInterstitialAd.setAdListener(new AdListener() {
-
             @Override
             public void onAdClosed() {
                 super.onAdClosed();
                 Log.d("MainActivity", "onAdClosed");
+                startActivity(new Intent(BreakoutGame.this, BreakoutGame.class));
                 finish();
-
             }
         });
-
 
         RelativeLayout relativeLayout = new RelativeLayout(this);
 
@@ -127,8 +131,12 @@ public class BreakoutGame extends Activity implements View.OnClickListener{
         AdRequest adRequest = new AdRequest.Builder().build();
         adView.loadAd(adRequest);
 
+//        gameWidgets.addView(myText);
+//        gameWidgets.addView(endGameButton);
+
         game.addView(breakoutView);
         game.addView(relativeLayout);
+//        game.addView(gameWidgets);
 
         setContentView(game);
         endGameButton.setOnClickListener(this);
@@ -279,6 +287,7 @@ public class BreakoutGame extends Activity implements View.OnClickListener{
             if (lives == 0) {
                 score = 0;
                 lives = 3;
+                GAME_OVER = true;
             }
         }
 
@@ -343,7 +352,14 @@ public class BreakoutGame extends Activity implements View.OnClickListener{
 
                 if (lives == 0) {
                     paused = true;
-                    createBricksAndRestart();
+
+                    runOnUiThread(new Runnable() {
+                        @Override public void run() {
+                            if (mInterstitialAd.isLoaded()) {
+                                mInterstitialAd.show();
+                            }
+                        }
+                    });
                 }
             }
 
@@ -431,7 +447,7 @@ public class BreakoutGame extends Activity implements View.OnClickListener{
                 // Has the player lost?
                 if (lives <= 0) {
                     paint.setTextSize(90);
-                    canvas.drawText("YOU HAVE LOST!", 10, screenY / 2, paint);
+//                    canvas.drawText("YOU HAVE LOST!", 10, screenY / 2, paint);
                 }
 
                 // Draw everything to the screen
